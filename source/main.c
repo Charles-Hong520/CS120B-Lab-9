@@ -11,8 +11,15 @@
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
 #endif
-
-
+#define A PINA&0x07
+#define C4 261.63
+#define D4 293.66
+#define E4 329.63
+#define F4 349.23
+#define G4 392.00
+#define A4 440.00
+#define B4 493.88
+#define C5 523.25
 
 void set_PWM(double frequency) {
     static double current_frequency;
@@ -30,7 +37,7 @@ void set_PWM(double frequency) {
 
 void PWM_on() {
     TCCR3A = (1<<COM3A0);
-    TCCR3B = (1<<WGM32) | (1<CS31) | (1<<CS30);
+    TCCR3B = (1<<WGM32) | (1<<CS31) | (1<<CS30);
     set_PWM(0);
 }
 
@@ -38,12 +45,31 @@ void PWM_off() {
     TCCR3A = 0x00;
     TCCR3B = 0x00;
 }
-double freq[] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
-//                 C       D       E       F       G       A       B       C5
+// double freq[] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
+//                    C       D       E       F       G       A       B       C5
+enum States {start, init} state;
 int main(void) {
-
+    DDRA = 0x00; PORTA = 0xFF;
+    DDRB = 0xFF; PORTB = 0x00;
+    state = start;
+    PORTA = PINA;
     while (1) {
-
+        switch(state) {
+            case start:
+            state = init;
+            break;
+            case init:
+            if(A == 0x01) {
+                set_PWM(C4);
+            } else if(A == 0x02) {
+                set_PWM(D4);
+            } else if(A == 0x04) {
+                set_PWM(E4);
+            } else {
+                set_PWM(0);
+            }
+            break;
+        }
     }
     return 1;
 }
