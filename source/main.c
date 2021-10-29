@@ -12,15 +12,15 @@
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
 #endif
-#define A (PINA&0x03)
-#define A2 (PINA&0x04)
-#define C4 261.63
-#define D4 293.66
-#define E4 329.63
-#define F4 349.23
-#define G4 392.00
-#define A4 440.00
-#define B4 493.88
+// #define A (PINA&0x03)
+// #define A2 (PINA&0x04)
+#define C 261.63
+#define D 293.66
+#define E 329.63
+#define F 349.23
+#define G 392.00
+#define A 440.00
+#define B 493.88
 #define C5 523.25
 enum Power_State {p_start, fr, np, nr, fp} p_state;
 enum State {start, release, plus, minus} state;
@@ -29,7 +29,7 @@ volatile unsigned char TimerFlag = 0; //TimerISR sets it to 1, programmer sets i
 unsigned long _avr_timer_M = 1; //start count from here, down to 0. Default 1ms
 unsigned long _avr_timer_cntcurr = 0; //current internal count of 1ms ticks
 
-const unsigned long periodGCD = 75;
+const unsigned long periodGCD = 65;
 unsigned char timeElapsed = 0;
 unsigned char i = 0;
 
@@ -95,8 +95,10 @@ void PWM_off() {
 // unsigned char note_period[] = {2,2,2,4,2,1,1,1,1,2,6,2,6};
 // double notes[] = {C5,0,B4,0,E4,A4,0,A4,0,F4,0,E4,0};
 
-double notes[] = {A4,0,A4,0,A4,0,G4,0,G4,0,E4,0,E4,0,G4};
-unsigned char note_period[] = {3,1,1,1,1,1,2,2,2,2,2,2,2,2,8};
+// double notes[] = {A4,0,A4,0,A4,0,G4,0,G4,0,E4,0,E4,0,G4};
+// unsigned char note_period[] = {3,1,1,1,1,1,2,2,2,2,2,2,2,2,8};
+
+
 // void Power_Tick() {
 //     switch(p_state) {
 //         case p_start: 
@@ -142,14 +144,7 @@ unsigned char note_period[] = {3,1,1,1,1,1,2,2,2,2,2,2,2,2,8};
 // }
 
 void Tick() {
-    set_PWM(notes[i]);
-    if(timeElapsed >= note_period[i]) {
-        timeElapsed = 0;
-        i++;
-    
-    }
-    timeElapsed++;
-    PORTB = 1<<(i%3);
+
 }
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
@@ -158,10 +153,20 @@ int main(void) {
     TimerSet(periodGCD);
     TimerOn();
     PWM_on();
-
+const unsigned char s = 1;
+double notes[] = {0,E,0,B,0, B,0, A,0, B,0, A,0, G,0, A,0, A,0, G,0, E,0, G};
+unsigned char note_period[] = {s,9,s,9,s,4,s,4,s,9,s,4,s,4,s,9,s,4,s,4,s,4,s,4}; //24
+unsigned char size = 24;
     while (1) {
         // Power_Tick();
-        Tick();
+        set_PWM(notes[i]);
+        if(timeElapsed >= note_period[i]) {
+            timeElapsed = 0;
+            i++;
+            if(i>=24) i = 0;
+        }
+        timeElapsed++;
+        PORTB = 1<<(i%5);
         while(!TimerFlag);
         TimerFlag = 0;
     }
