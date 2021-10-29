@@ -1,8 +1,8 @@
 /*	Author: lab
- *  Partner(s) Name: 
- *	Lab Section:
- *	Assignment: Lab #  Exercise #
- *	Exercise Description: [optional - include for your own benefit]
+ *  Partner(s) Name: Charles Hong
+ *	Lab Section: 022
+ *	Assignment: Lab #9  Exercise #1
+ *	Exercise Description: press for C D E
  *
  *	I acknowledge all content contained herein, excluding template or example
  *	code, is my own original work.
@@ -49,20 +49,19 @@ void PWM_off() {
 //                    C       D       E       F       G       A       B       C5
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0xFF; PORTB = 0x00;
+    DDRB = 0x40; PORTB = 0x00;
     PORTA = PINA;
+            PWM_on();
+
     while (1) {
         if(A == 0x01) {
-            PWM_on();
             set_PWM(C4);
         } else if(A == 0x02) {
-            PWM_on();
             set_PWM(D4);
         } else if(A == 0x04) {
-            PWM_on();
             set_PWM(E4);
         } else {
-            PWM_off();
+            set_PWM(0);
         }
     }
     return 1;
