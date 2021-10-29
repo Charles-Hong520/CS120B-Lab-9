@@ -8,6 +8,7 @@
  *	code, is my own original work.
  */
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
 #endif
@@ -28,7 +29,7 @@ volatile unsigned char TimerFlag = 0; //TimerISR sets it to 1, programmer sets i
 unsigned long _avr_timer_M = 1; //start count from here, down to 0. Default 1ms
 unsigned long _avr_timer_cntcurr = 0; //current internal count of 1ms ticks
 
-const unsigned long periodGCD = 250;
+const unsigned long periodGCD = 75;
 unsigned char timeElapsed = 0;
 unsigned char i = 0;
 
@@ -48,7 +49,6 @@ void TimerOff() {
 
 void TimerISR() {
     TimerFlag = 1;
-    timeElapsed++;
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -88,10 +88,15 @@ void PWM_off() {
     TCCR3A = 0x00;
     TCCR3B = 0x00;
 }
-double freq[] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
-//                  C       D       E       F       G       A       B       C5
-unsigned char note_period[] = {4,3,1,6,2,4,4,6};
-double notes[] = {C5, B4, A4, G4, F4, E4, D4, C4};
+
+// unsigned char note_period[] = {4,3,1,6,2,4,4,6};
+// double notes[] = {C5, B4, A4, G4, F4, E4, D4, C4};
+
+// unsigned char note_period[] = {2,2,2,4,2,1,1,1,1,2,6,2,6};
+// double notes[] = {C5,0,B4,0,E4,A4,0,A4,0,F4,0,E4,0};
+
+double notes[] = {A4,0,A4,0,A4,0,G4,0,G4,0,E4,0,E4,0,G4};
+unsigned char note_period[] = {3,1,1,1,1,1,2,2,2,2,2,2,2,2,8};
 // void Power_Tick() {
 //     switch(p_state) {
 //         case p_start: 
@@ -141,12 +146,15 @@ void Tick() {
     if(timeElapsed >= note_period[i]) {
         timeElapsed = 0;
         i++;
+    
     }
+    timeElapsed++;
+    PORTB = 1<<(i%3);
 }
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0x40; PORTB = 0x00;
-
+    DDRB = 0x4F; PORTB = 0x00;
+    PORTA = PINA;
     TimerSet(periodGCD);
     TimerOn();
     PWM_on();
