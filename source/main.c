@@ -1,8 +1,8 @@
 /*	Author: lab
  *  Partner(s) Name: Charles Hong
  *	Lab Section: 022
- *	Assignment: Lab #9  Exercise #2
- *	Exercise Description: toggle sound, scale up or down
+ *	Assignment: Lab #9  Exercise #3
+ *	Exercise Description: Melody 5 seconds
  *
  *	I acknowledge all content contained herein, excluding template or example
  *	code, is my own original work.
@@ -22,16 +22,13 @@
 #define A 440.00
 #define B 493.88
 #define C5 523.25
-enum Power_State {p_start, fr, np, nr, fp} p_state;
-enum State {start, release, plus, minus} state;
+
 
 volatile unsigned char TimerFlag = 0; //TimerISR sets it to 1, programmer sets it to 0
 unsigned long _avr_timer_M = 1; //start count from here, down to 0. Default 1ms
 unsigned long _avr_timer_cntcurr = 0; //current internal count of 1ms ticks
 
-const unsigned long periodGCD = 65;
-unsigned char timeElapsed = 0;
-unsigned char i = 0;
+
 
 
 void TimerOn() {
@@ -97,76 +94,81 @@ void PWM_off() {
 
 // double notes[] = {A4,0,A4,0,A4,0,G4,0,G4,0,E4,0,E4,0,G4};
 // unsigned char note_period[] = {3,1,1,1,1,1,2,2,2,2,2,2,2,2,8};
-
-
-// void Power_Tick() {
-//     switch(p_state) {
-//         case p_start: 
-//         p_state = fr;
-//         PWM_on();
-//         break;
-//         case fr:
-//         if(A2) {
-//             p_state = np;
-//         }
-//         else p_state = fr;
-//         break;
-
-//         case np:
-//         if(A2) p_state = np;
-//         else p_state = nr;
-//         break;
-
-//         case nr:
-//         if(A2) {
-//             p_state = fp;
-//         }
-//         else p_state = nr;
-//         break;
-
-//         case fp:
-//         if(A2) p_state = fp;
-//         else p_state = fr;
-//         break;
-//     }
-//     switch(p_state) {
-//         case start: break;
-//         case np:
-//         case nr:
-//         set_PWM(freq[i]);
-//         break;
-
-//         case fp:
-//         case fr:
-//         set_PWM(0);
-//         break;
-//     }
-// }
+#define A0 (PINA&0x01)
+enum State {start, release, up, down} state;
+double notes[] = {0,E,0,B,0, B,0, A,0, B,0, A,0, G,0, A,0, A,0, G,0, E,0, G,0};
+unsigned char note_period[] = {1,9,1,9,1,4,1,4,1,9,1,4,1,4,1,9,1,4,1,4,1,4,1,4,1}; //24
+const unsigned long periodGCD = 65;
+const unsigned char size = 24;
+unsigned char timeElapsed = 0;
+unsigned char p = 0,i = 0;
+void Power_Tick() {
+    switch(state) {
+        case start:
+        state = up;
+        p = 0;
+        break;        
+        case up:
+        if(A0) {
+            state = down;
+            p=1;
+        } else {
+            state = up;
+        }
+        break;        
+        case down:
+        if(A0 && i<size) {
+            state = down;
+        }
+        else if(A0 && i>=size) {
+            state = down;
+            p=0;
+        } else if(!A0 && i>=size) {
+            state = up;
+            p=0;
+        } else {
+            state = release;
+        }
+        break;
+        case release:
+        if(!A0&& i<size) {
+            state = release;
+        } else {
+            state = up;
+            p=i=0;
+        }
+        break;
+    }
+    switch(state) {
+        case up:
+        p=i=0;
+        break;
+        case down:
+        case start:
+        case release:
+        break;
+    }
+}
 
 void Tick() {
-
+    set_PWM(notes[i]);
+    if(timeElapsed >= note_period[i]) {
+        timeElapsed = 0;
+        i++;
+    }
+    timeElapsed++;
 }
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0x4F; PORTB = 0x00;
+    DDRB = 0x40; PORTB = 0x00;
     PORTA = PINA;
+    state = start;
     TimerSet(periodGCD);
     TimerOn();
     PWM_on();
-const unsigned char s = 1;
-double notes[] = {0,E,0,B,0, B,0, A,0, B,0, A,0, G,0, A,0, A,0, G,0, E,0, G};
-unsigned char note_period[] = {s,9,s,9,s,4,s,4,s,9,s,4,s,4,s,9,s,4,s,4,s,4,s,4}; //24
-unsigned char size = 24;
     while (1) {
-        // Power_Tick();
-        set_PWM(notes[i]);
-        if(timeElapsed >= note_period[i]) {
-            timeElapsed = 0;
-            i++;
-            if(i>=24) i = 0;
-        }
-        timeElapsed++;
-        PORTB = 1<<(i%5);
+        Power_Tick();
+        Tick();
         while(!TimerFlag);
         TimerFlag = 0;
     }
